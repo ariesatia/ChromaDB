@@ -1,0 +1,65 @@
+Dua fase utama RAG
+Fase 1: Indexing (Dilakukan ketika dokumen diunggah).
+
+Dokumen
+   ↓
+Ekstraksi teks/OCR
+   ↓
+Chunking
+   ↓
+Embedding
+   ↓
+Vector database
+
+Fase 2: Retrieval dan generation (Dilakukan ketika pengguna bertanya).
+
+Pertanyaan
+   ↓
+Embedding pertanyaan
+   ↓
+Pencarian chunk relevan
+   ↓
+Prompt + konteks
+   ↓
+Qwen3.5 4B
+   ↓
+Jawaban
+
+
+Arsitektur RAG Anda saat ini
+Pengguna
+   ↓
+Open WebUI
+   ↓
+Pertanyaan diubah menjadi chunking
+   ↓
+nomic-embed-text (Embedding model)
+   ↓
+ChromaDB (Vector database)
+   ↓
+Chunk relevan ditemukan
+   ↓
+Prompt berisi konteks + pertanyaan
+   ↓
+qwen3.5:4b-nothink
+   ↓
+Jawaban kepada pengguna
+
+
+Docker membentuk arsitektur:
+Browser
+   ↓
+Open WebUI Container
+   ↓
+Ollama Container
+   ├── qwen3.5:4b-nothink
+   └── nomic-embed-text
+
+Antarmuka          : Open WebUI
+Model generatif    : qwen3.5:4b-nothink
+Embedding model    : nomic-embed-text:latest
+Model runtime      : Ollama
+Dokumen            : Knowledge Base
+Ekstraksi dokumen  : Open WebUI + OCR
+Retrieval          : pencarian vector similarity
+Penyimpanan vektor : ChromaDB
