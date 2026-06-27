@@ -1,0 +1,48 @@
+1. Download image terbaru
+docker pull ollama/ollama:latest
+
+2. Jalankan dengan NVIDIA GPU:
+docker run -d \
+  --gpus all \
+  --name ollama \
+  --restart unless-stopped \
+  -p 11434:11434 \
+  -v ollama:/root/.ollama \
+  ollama/ollama:latest
+
+Jika menggunakan Docker Compose
+Buat file docker-compose.yml seperti ini:
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    gpus: all
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  ollama:
+
+Lalu:
+docker compose up -d
+
+3. Verifikasi versi ollama
+docker exec -it ollama ollama --version
+
+4. Pull model
+docker exec -it ollama ollama pull qwen3.5:4b
+
+5. Verifikasi model
+docker exec -it ollama ollama search qwen
+
+atau hasil dari:
+docker ps
+docker images
+
+6. Jalankan Qwen3.5
+docker exec -it ollama ollama run qwen3.5:4b
+
