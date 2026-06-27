@@ -1,0 +1,106 @@
+Arsitektur Chroma:
+Open WebUI
+    ↓
+ChromaDB Server
+    ↓
+Chroma UI
+
+Chroma disarankan:
+ChromaDB server : chromadb/chroma
+Chroma UI       : chromadb-admin
+
+Install:
+1. Buat Docker network bersama
+docker network create rag-network
+docker network connect rag-network ollama
+docker network connect rag-network open-webui
+
+2. Jalankan ChromaDB server
+mkdir -p ~/chroma-data
+docker run -d \
+  --name chromadb \
+  --restart unless-stopped \
+  --network rag-network \
+  -p 8000:8000 \
+  -v ~/chroma-data:/data \
+  chromadb/chroma:latest
+cek: docker ps
+uji: curl http://localhost:8000/api/v2/heartbeat
+
+3. Bangun chromadb-admin langsung dari source
+sudo apt update
+sudo apt install -y git
+
+Clone Proyek:
+cd ~
+git clone https://github.com/flanker/chromadb-admin.git
+cd chromadb-admin
+
+Build image lokal:
+docker build -t chromadb-admin-local .
+
+Kemudian jalankan:
+docker run -d \
+  --name chromadb-admin \
+  --restart unless-stopped \
+  --network rag-network \
+  -p 3001:3001 \
+  chromadb-admin-local
+
+Periksa:
+docker ps
+
+Buka:
+http://localhost:3001
+
+4. Alamat ChromaDB pada UI
+masukkan:
+Chroma URL : http://chromadb:8000
+Tenant     : default_tenant
+Database   : default_database
+http://ollama:11434/v1/embeddings
+nomic-embed-text:latest
+
+5. Sambungkan Open WebUI
+catat volume
+open-webui  ->  /app/backend/data
+
+Buat ulang Open WebUI dengan koneksi Chroma eksternal
+docker stop open-webui
+docker rm open-webui
+docker run -d \
+  --name open-webui \
+  --restart unless-stopped \
+  --network rag-network \
+  -p 3000:8080 \
+  -e OLLAMA_BASE_URL=http://ollama:11434 \
+  -e VECTOR_DB=chroma \
+  -e CHROMA_HTTP_HOST=chromadb \
+  -e CHROMA_HTTP_PORT=8000 \
+  -e CHROMA_TENANT=default_tenant \
+  -e CHROMA_DATABASE=default_database \
+  -v open-webui:/app/backend/data \
+  ghcr.io/open-webui/open-webui:main
+
+Verifikasi konfigurasi
+docker inspect open-webui \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | grep -E 'VECTOR_DB|CHROMA_HTTP'
+
+docker exec open-webui \
+  curl http://chromadb:8000/api/v2/heartbeat
+
+6. Reindex Knowledge Base
+Buka Open WebUI:
+http://localhost:3000
+Kemudian:
+Admin Panel
+→ Settings
+→ Documents
+→ Reindex Knowledge Base
+Atau unggah satu dokumen baru ke Knowledge sebagai pengujian.
+
+7. Muat ulang Chroma Admin
+Setelah reindex selesai, buka kembali:
+http://localhost:3001
+Lalu refresh halaman.
